@@ -1,0 +1,51 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+link = "https://www.imdb.com/chart/moviemeter/?sort=user_rating%2Cdesc"
+requisicao = requests.get(link, headers=headers)
+
+site = BeautifulSoup(requisicao.text, "html.parser")
+
+##########################################################################################################################################################
+
+scraped_titles = site.find_all('h3', class_='ipc-title__text ipc-title__text--reduced')
+
+titulos = []
+for titulo in scraped_titles:
+    titulos.append(titulo.get_text().strip())
+titulos.remove('IMDb Charts')
+titulos.remove('Recently viewed')
+
+
+scraped_ratings = site.find_all('span', class_='ipc-rating-star--rating')
+
+ratings = []
+for rating in scraped_ratings:
+    ratings.append(rating.get_text().strip())
+
+scraped_ranks = site.find_all('div', class_='sc-9e9aed54-0 ldNYNW meter-const-ranking sc-15ac7568-5 cvldMO cli-meter-title-header')
+
+ranks = []
+for rank in scraped_ranks:
+    ranks.append(rank.get_text().strip())
+
+scraped_years = site.find_all('span', class_='sc-15ac7568-7 cCsint cli-title-metadata-item')
+
+anos = []
+for ano in scraped_years:
+    valor = ano.get_text().strip()
+    if valor.isdigit() and len(valor) > 3:
+        anos.append(valor)
+
+##########################################################################################################################################################
+
+filmes = []
+
+for i in range(0, len(ranks)):
+    filmes += [[ranks[i], titulos[i], ratings[i], anos[i]]]
+
+df = pd.DataFrame(filmes, columns=['Ranking(Mudança)', 'Titulo', 'Avaliações', 'Ano de Lançamento'])
+print(df)
+df.to_csv('dataframeIMDb.csv')
